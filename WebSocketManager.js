@@ -101,3 +101,4 @@ function WebSocketManager(wsUrl, agentName, funcMap, heartCheckTime = 59000) {
     return {close, status, addFunc};
 
 }
+window.WebSocketManager = WebSocketManager;

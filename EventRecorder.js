@@ -63,10 +63,10 @@ function RecordAPI(baseUrl) {
  * Recorded actions are stored with timestamps and unique selectors for replay.
  * Actions can be saved to and retrieved from a remote API endpoint.
  */
-function EventRecorder() {
+function EventRecorder(baseUrl) {
     let isRecording = false; // record flag
     let actions = []; // recorded actions
-    let recordAPI = RecordAPI("http://localhost:8080");
+    let recordAPI = RecordAPI(baseUrl);
 
     function startRecording() {
         isRecording = true;
@@ -221,3 +221,4 @@ function getUniqueSelector(element) {
 
     return getPath(element);
 }
+window.EventRecorder = EventRecorder;
