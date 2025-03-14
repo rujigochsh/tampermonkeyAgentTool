@@ -1,5 +1,5 @@
 // WebSocketManager.js
-export function WebSocketManager(wsUrl, agentName, funcMap, heartCheckTime = 59000) {
+function WebSocketManager(wsUrl, agentName, funcMap, heartCheckTime = 59000) {
     let lockReconnect = false;
     let retry = 0;
     let ws = null;
