@@ -20,14 +20,16 @@ function RecordAPI(baseUrl) {
             };
 
             // GET请求不应携带body，参数应拼接到URL
+            url = baseUrl + uri;
+
             if (method.toUpperCase() !== "GET") {
                 config.body = JSON.stringify(requestParams);
             } else {
                 const queryParams = new URLSearchParams(requestParams).toString();
-                baseUrl = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}${queryParams}`;
+                url = `${url}${url.includes('?') ? '&' : '?'}${queryParams}`;
             }
 
-            const response = await fetch(baseUrl + uri, config);
+            const response = await fetch(url, config);
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -209,7 +211,7 @@ function EventRecorder(baseUrl) {
                 deleteAction(index);
             });
         });
-        
+
         function deleteAction(index) {
             let confirmDelete = confirm(`确定要删除 "${savedActions[index].name}" 吗？`);
     
