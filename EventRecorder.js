@@ -187,7 +187,7 @@ function EventRecorder(baseUrl) {
                 <span id="event-${index}">${action.name}</span>
                 <button data-index="${index}" class="replayButton">重放</button>
                 <button data-index="${index}" class="deleteButton">删除</button>
-                <button data-index="${index}" class="editButton">删除</button>
+                <button data-index="${index}" class="editButton">修改</button>
             `;
                 actionList.appendChild(li);
             });
