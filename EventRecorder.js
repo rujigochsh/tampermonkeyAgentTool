@@ -87,7 +87,7 @@ function EventRecorder(baseUrl) {
         let functionName = prompt("请输入操作名称:");
         if (!functionName) return;
 
-        let requestParams = JSON.stringify({ name: functionName, steps: actions });
+        let requestParams = { name: functionName, steps: actions };
 
         //保存事件
         recordAPI.Insert(requestParams).then(res => {
