@@ -47,8 +47,9 @@ function RecordAPI(baseUrl) {
     const List = (requestParams) => requestEventRecordsApi("GET", requestParams, "/api/record/list");
     const Insert = (requestParams) => requestEventRecordsApi("POST", requestParams);
     const Delete = (requestParams) => requestEventRecordsApi("DELETE", requestParams);
+    const Update = (requestParams) => requestEventRecordsApi("PUT", requestParams);
 
-    return { Get, Insert, Delete, List };
+    return { Get, Insert, Delete, List, Update };
 }
 
 
@@ -189,28 +190,116 @@ function EventRecorder(baseUrl) {
             `;
                 actionList.appendChild(li);
             });
+            // 绑定重放按钮
+            document.querySelectorAll(".replayButton").forEach(button => {
+                button.addEventListener("click", function () {
+                    let index = this.getAttribute("data-index");
+                    let funcName = document.getElementById(`event-${index}`).textContent;
+                    replayActions(funcName);
+                });
+            });
+
+            // 绑定删除按钮
+            document.querySelectorAll(".deleteButton").forEach(button => {
+                button.addEventListener("click", function () {
+                    let index = this.getAttribute("data-index");
+                    deleteAction(index);
+                });
+            });
+
+            // 绑定修改按钮
+            document.querySelectorAll(".editButton").forEach(button => {
+                button.addEventListener("click", function () {
+                    let index = this.getAttribute("data-index");
+                    let funcName = document.getElementById(`event-${index}`).textContent;
+
+                    // 获取原始记录数据
+                    recordAPI.Get({ name: funcName }).then(originalRecord => {
+                        // 创建编辑弹窗
+                        const modal = document.createElement("div");
+                        modal.style.cssText = `
+                                    position: fixed;
+                                    top: 50%;
+                                    left: 50%;
+                                    transform: translate(-50%, -50%);
+                                    background: white;
+                                    padding: 20px;
+                                    border: 2px solid #666;
+                                    z-index: 10000;
+                                    min-width: 500px;
+                                `;
+
+                        // 创建文本编辑区域
+                        const textarea = document.createElement("textarea");
+                        textarea.style.cssText = `
+                                    width: 100%;
+                                    height: 300px;
+                                    margin-bottom: 10px;
+                                    font-family: monospace;
+                                `;
+                        textarea.value = JSON.stringify(originalRecord, null, 2);
+
+                        // 创建操作按钮容器
+                        const btnContainer = document.createElement("div");
+                        btnContainer.style.textAlign = 'right';
+
+                        // 确认按钮
+                        const confirmBtn = document.createElement("button");
+                        confirmBtn.textContent = "确定";
+                        confirmBtn.onclick = async () => {
+                            try {
+                                const modifiedData = JSON.parse(textarea.value);
+                                await recordAPI.Update({
+                                    name: funcName
+                                }, modifiedData);
+
+                                alert("修改成功");
+                                modal.remove();
+                                overlay.remove();
+                                loadActions(); // 刷新列表
+                            } catch (error) {
+                                console.error("修改失败:", error);
+                                alert(`修改失败: ${error.message}`);
+                            }
+                        };
+
+                        // 取消按钮
+                        const cancelBtn = document.createElement("button");
+                        cancelBtn.textContent = "取消";
+                        cancelBtn.style.marginLeft = "10px";
+                        cancelBtn.onclick = () => {
+                            modal.remove();
+                            overlay.remove();
+                        };
+
+                        // 组装元素
+                        btnContainer.appendChild(confirmBtn);
+                        btnContainer.appendChild(cancelBtn);
+                        modal.appendChild(textarea);
+                        modal.appendChild(btnContainer);
+
+                        // 添加遮罩层
+                        const overlay = document.createElement("div");
+                        overlay.style.cssText = `
+                                    position: fixed;
+                                    top: 0;
+                                    left: 0;
+                                    right: 0;
+                                    bottom: 0;
+                                    background: rgba(0,0,0,0.5);
+                                    z-index: 9999;
+                                `;
+
+                        document.body.appendChild(overlay);
+                        document.body.appendChild(modal);
+                    });
+                });
+            });
         }).catch(err => {
             console.error("Failed to load actions:", err);
         });
 
-        // 绑定重放按钮
-        document.querySelectorAll(".replayButton").forEach(button => {
-            button.addEventListener("click", function() {
-                let index = this.getAttribute("data-index");
-                let funcName = document.getElementById(`event-${index}`).textContent;
-                replayActions(funcName);
-
-            });
-
-        });
-
-        // 绑定删除按钮
-        document.querySelectorAll(".deleteButton").forEach(button => {
-            button.addEventListener("click", function() {
-                let index = this.getAttribute("data-index");
-                deleteAction(index);
-            });
-        });
+       
 
         function deleteAction(index) {
             let confirmDelete = confirm(`确定要删除 "${savedActions[index].name}" 吗？`);
