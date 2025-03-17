@@ -94,6 +94,7 @@ function EventRecorder(baseUrl) {
         recordAPI.Insert(requestParams).then(res => {
             console.log("send request:", requestParams);
             alert("保存成功");
+            loadActions();
         }).catch(err => {
             console.error("send request error:", err);
         });
@@ -108,7 +109,7 @@ function EventRecorder(baseUrl) {
 
         // 忽略“结束记录”按钮的点击
         let target = event.target;
-        if (target.id === "stopRecord") return;
+        if (target.id === "startRecord" || target.id === "stopRecord") return;
 
         let selector = getUniqueSelector(target);
         let action = {
@@ -151,7 +152,7 @@ function EventRecorder(baseUrl) {
 
     function registerEvent(eventTypes = ["click", "input", "change", "focus"]) {
         eventTypes.forEach(type => {
-            document.addEventListener(type, handleEvent);
+            document.addEventListener(type, handleEvent, true);
         });
     }
 
