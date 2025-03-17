@@ -12,7 +12,7 @@
  * @throws {Error} If the API request fails or returns non-200 status
  */
 function RecordAPI(baseUrl) {
-    async function requestEventRecordsApi(method, requestParams) {
+    async function requestEventRecordsApi(method, requestParams, uri="/api/record") {
         try {
             const config = {
                 method: method,
@@ -27,7 +27,7 @@ function RecordAPI(baseUrl) {
                 baseUrl = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}${queryParams}`;
             }
 
-            const response = await fetch(baseUrl + "/api/record", config);
+            const response = await fetch(baseUrl + uri, config);
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -42,10 +42,11 @@ function RecordAPI(baseUrl) {
 
     // 确保返回Promise
     const Get = (requestParams) => requestEventRecordsApi("GET", requestParams);
+    const List = (requestParams) => requestEventRecordsApi("GET", requestParams, "/api/record/list");
     const Insert = (requestParams) => requestEventRecordsApi("POST", requestParams);
     const Delete = (requestParams) => requestEventRecordsApi("DELETE", requestParams);
 
-    return { Get, Insert, Delete };
+    return { Get, Insert, Delete, List };
 }
 
 
@@ -66,7 +67,7 @@ function RecordAPI(baseUrl) {
 function EventRecorder(baseUrl) {
     let isRecording = false; // record flag
     let actions = []; // recorded actions
-    let recordAPI = RecordAPI(baseUrl);
+    let recordAPI = new RecordAPI(baseUrl);
 
     function startRecording() {
         isRecording = true;
@@ -151,7 +152,79 @@ function EventRecorder(baseUrl) {
         });
     }
 
-    return { registerEvent, startRecording, stopRecording, replayActions }
+    function createUI() {
+        let container = document.createElement("div");
+        container.style.position = "fixed";
+        container.style.top = "10px";
+        container.style.right = "10px";
+        container.style.zIndex = "9999";
+        container.style.backgroundColor = "white";
+        container.style.padding = "10px";
+        container.style.border = "1px solid black";
+        container.style.boxShadow = "2px 2px 10px rgba(0,0,0,0.2)";
+        container.innerHTML = `
+            <button id="startRecord">开始记录</button>
+            <button id="stopRecord">结束记录</button>
+            <ul id="actionList" style="list-style:none;padding:0;"></ul>
+        `;
+        document.body.appendChild(container);
+
+        document.getElementById("startRecord").addEventListener("click", startRecording);
+        document.getElementById("stopRecord").addEventListener("click", stopRecording);
+        loadActions();
+    }
+
+    function loadActions() {
+        let actionList = document.getElementById("actionList");
+        actionList.innerHTML = ""; // 清空列表
+        recordAPI.List().then(records => {
+            records.forEach((action, index) => {
+                let li = document.createElement("li");
+                li.innerHTML = `
+                <span id="event-${index}">${action.name}</span>
+                <button data-index="${index}" class="replayButton">重放</button>
+                <button data-index="${index}" class="deleteButton">删除</button>
+            `;
+                actionList.appendChild(li);
+            });
+        }).catch(err => {
+            console.error("Failed to load actions:", err);
+        });
+
+        // 绑定重放按钮
+        document.querySelectorAll(".replayButton").forEach(button => {
+            button.addEventListener("click", function() {
+                let index = this.getAttribute("data-index");
+                let funcName = document.getElementById(`event-${index}`).textContent;
+                replayActions(funcName);
+
+            });
+
+        });
+
+        // 绑定删除按钮
+        document.querySelectorAll(".deleteButton").forEach(button => {
+            button.addEventListener("click", function() {
+                let index = this.getAttribute("data-index");
+                deleteAction(index);
+            });
+        });
+        
+        function deleteAction(index) {
+            let confirmDelete = confirm(`确定要删除 "${savedActions[index].name}" 吗？`);
+    
+            if (confirmDelete) {
+                let funcName = document.getElementById(`event-${index}`).textContent;
+                recordAPI.Delete(funcName).then(msg=>{
+                    console.log("delete action:", msg);
+                    loadActions(); // 重新加载列表
+                });
+                
+            }
+        }
+    }
+
+    return { registerEvent, createUI, startRecording, stopRecording, replayActions }
 }
 
 // 获取唯一CSS选择器
@@ -221,4 +294,8 @@ function getUniqueSelector(element) {
 
     return getPath(element);
 }
+
+
+//register function in window
 window.EventRecorder = EventRecorder;
+
